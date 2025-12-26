@@ -68,7 +68,7 @@ This project utilizes the public dataset: **"Retinal Image Dataset of Infants an
     └── metadata/                   # Patch CSVs
 
 
-```markdown
+```
 ## 4. Training Pipeline
 
 To reproduce the results reported in the paper, follow these three phases in order.
