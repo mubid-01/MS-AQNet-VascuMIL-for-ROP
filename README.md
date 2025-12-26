@@ -68,6 +68,7 @@ This project utilizes the public dataset: **"Retinal Image Dataset of Infants an
     └── metadata/                   # Patch CSVs
 
 
+```markdown
 ## 4. Training Pipeline
 
 To reproduce the results reported in the paper, follow these three phases in order.
@@ -85,10 +86,11 @@ python engine_ms_aqnet_production.py \
   --freeze_backbone_epochs 5 \
   --use_sampler \
   --out_dir ./ms_models_restored_final
+```
 
-
-###Phase B: Train the Texture Specialist (VascuMIL)
+### Phase B: Train the Texture Specialist (VascuMIL)
 Trains the 4-Channel (RGB+VMAP) MIL network. Uses a Bag-Level Weighted Sampler to handle the rarity of Plus Disease (~3% prevalence) and BCEWithLogitsLoss.
+
 ```bash
 python engine_mil_production.py \
   --train_csv ./mil_dataset_fold0/metadata/fold_0/patches_train.csv \
@@ -99,9 +101,9 @@ python engine_mil_production.py \
   --epochs 20 \
   --static_pos_weight 1.0 \
   --out_dir ./mil_models
+```
 
-
-###Phase C: Train the Fusion Ensemble
+### Phase C: Train the Fusion Ensemble
 Freezes the two specialists and trains a lightweight Meta-Learner (MLP) on the validation set predictions (Stacking strategy) to learn the optimal combination of Structure, Texture, and Metadata.
 
 ```bash
@@ -110,5 +112,47 @@ python engine_ensemble.py \
   --mil_path ./mil_models/best_mil_model.pth \
   --val_csv ./splits_balanced/fold_0/val.csv \
   --patches_csv ./mil_dataset_fold0/metadata/fold_0/patches_val.csv
+```
 
+**Output:** Saves `final_fusion_ensemble.pth` and prints final SOTA metrics (F1, Kappa, AUC).
+
+## 5. Repository Structure
+
+### Data Engineering
+- `balanced_split_by_diagnosis_with_plus_fix.py`: A robust splitter that handles extreme class imbalance, ensuring every fold contains rare classes (Severe/Plus).
+- `preproc_shared.py`: The "Source of Truth" for image processing (Gamma → Erosion → CLAHE).
+- `patch_extractor_optimized.py`: Generates VMAPs (Frangi) and extracts high-res patches.
+
+### Modeling
+- `model_ms_aqnet.py`: Defines MS-AQNet (Structure), featuring the Active Query Unit and FiLM layers.
+- `model_patch_mil.py`: Defines VascuMIL (Texture), featuring 4-channel inputs and Gated Attention.
+- `model_ensemble.py`: Defines the Fusion MLP.
+
+### Training Engines
+- `dataset_loader_ms_aqnet.py`: PyTorch loader for MS-AQNet (includes aggressive augmentation).
+- `mil_dataloader_rgb_vmap.py`: PyTorch loader for VascuMIL (handles bag construction).
+- `engine_ms_aqnet_production.py`: Training loop for Structure stream.
+- `engine_mil_production.py`: Training loop for Texture stream.
+- `engine_ensemble.py`: Training loop for Fusion.
+
+## 6. Clinical Explainability ("Glass Box")
+
+This framework includes a suite of visualization tools to validate model decision-making against clinical landmarks.
+
+| Script Name | Paper Figure | Function |
+|-------------|--------------|----------|
+| `viz_ms_aqnet_explainability.py` | Figure 2 | Generates Grad-CAM++ Heatmaps and "Counterfactual Risk Maps" showing how metadata alters visual attention. |
+| `viz_mil_vessel_map_fixed.py` | Figure 3 | Reconstructs a full-image "Vascular Threat Map" (Neon style) by reprojecting patch attention scores. |
+| `viz_combined_explainability.py` | Figure 4 | Generates composite case studies (Original + Structure Map + Texture Map) side-by-side. |
+| `viz_confusion_matrix_dual.py` | Figure 6 | Plots the dual-panel confusion matrix for Broad Diagnosis and Plus Disease. |
+| `viz_shap_tsne.py` | Figure 7 | Generates SHAP Beeswarm plots and t-SNE manifold projections. |
+
+To generate the main explainability figure:
+```bash
+python viz_combined_explainability.py
+```
+
+## Acknowledgments
+We thank the authors of the Scientific Data ROP dataset (Timkovič et al.) for making their data publicly available.
+```
 
