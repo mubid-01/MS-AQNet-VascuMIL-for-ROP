@@ -152,6 +152,9 @@ python visualization/viz_combined_explainability.py \
     --val_csv ./data/splits/fold_0/val.csv \
     --patches_csv ./data/mil_dataset/metadata/patches_val.csv```
 ```
+## Pretrained Weights
+Pretrained Weights can be found in this [link](https://drive.google.com/drive/folders/1dTaGdnppu6p6WQDrL0tHeQCsbtnj50xG?usp=sharing).
+
 ## Acknowledgments
 We thank the authors of the Scientific Data ROP dataset (Timkovič et al.) for making their data publicly available.
 ```
